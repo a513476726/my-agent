@@ -1,0 +1,55 @@
+# ---- Python / uv ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# ---- Node / pnpm ----
+node_modules/
+.pnpm-store/
+dist/
+dist-ssr/
+*.local
+.eslintcache
+coverage/
+test-results/
+playwright-report/
+
+# ---- 环境变量与密钥 ----
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+
+# ---- 运行数据（非事实来源） ----
+data/
+!data/.gitkeep
+workspace/
+!workspace/.gitkeep
+
+# ---- 构建与临时产物 ----
+*.log
+logs/
+tmp/
+.cache/
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# ---- AI 工具本地状态（保留 .claude/ 中的 skills 与配置） ----
+.claude/settings.local.json
+
+# OMC 运行态不入库；.omc/skills/ 是唯一允许提交的例外
+.omc/*
+!.omc/skills/
+!.omc/skills/**
