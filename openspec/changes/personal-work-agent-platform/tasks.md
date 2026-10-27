@@ -6,8 +6,8 @@
 - [x] 1.2 建立 uv workspace 根 `pyproject.toml` 与 `apps/`、`packages/`、`services/` 目录骨架，验证 `uv sync` 成功
 - [x] 1.3 建立 pnpm workspace 根 `pnpm-workspace.yaml`，验证 `pnpm install` 成功
 - [x] 1.4 配置 `import-linter` 的依赖方向规则（`core` 零依赖、`apps` 互不 import、`knowledge` 不依赖 `data`），验证故意越界时 `lint-imports` 失败
-- [ ] 1.5 编写 `CODEOWNERS`，验证 GitHub 能识别各目录负责人（位置/owner/路径校验通过，owner 已用 `a513476726` SSH 身份确认；GitHub 识别待远程仓库）
-- [ ] 1.6 建立 GitHub Actions：Python lint/test 与前端 lint/build 按 `paths:` 过滤，验证仅改 `apps/web` 时只触发前端任务（actionlint 与路径模拟通过；GitHub 实跑待远程仓库）
+- [x] 1.5 编写 `CODEOWNERS`，验证 GitHub 能识别各目录负责人（文件位于 `.github/CODEOWNERS`，owner `a513476726` 已确认推送权限，远程 `main` 已包含该文件）
+- [x] 1.6 建立 GitHub Actions：Python lint/test 与前端 lint/build 按 `paths:` 过滤，验证仅改 `apps/web` 时只触发前端任务（首次推送 Backend/Frontend/Contracts 全成功；仅改 `apps/web` 的提交只触发 Frontend 并成功）
 - [x] 1.7 添加 `Makefile`（`sync`、`lint`、`test`、`up`、`down`），验证每条目标可独立执行
 
 ## 2. 数据层（P1）
