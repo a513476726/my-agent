@@ -1,5 +1,7 @@
 SHELL := /bin/bash
+ENV_FILE ?= .env
 COMPOSE_FILE := deploy/compose/docker-compose.yml
+COMPOSE := docker compose --env-file $(ENV_FILE) -f $(COMPOSE_FILE)
 RAGFLOW_COMPOSE_FILE := deploy/compose/ragflow/docker-compose.yml
 
 .PHONY: help sync lint test contracts contracts-check up down ragflow-up ragflow-down ragflow-smoke sync-documents backup restore verify-readonly verify-deploy
@@ -45,10 +47,10 @@ contracts-check:
 	pnpm --filter @my-agent/shared-types generate:check
 
 up:
-	docker compose -f $(COMPOSE_FILE) up -d
+	$(COMPOSE) up -d
 
 down:
-	docker compose -f $(COMPOSE_FILE) down
+	$(COMPOSE) down
 
 ragflow-up:
 	docker compose -f $(RAGFLOW_COMPOSE_FILE) up -d

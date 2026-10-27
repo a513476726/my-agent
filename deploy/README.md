@@ -2,16 +2,16 @@
 
 ## 默认暴露面
 
-`deploy/compose/docker-compose.yml` 默认只发布两个端口：
+`deploy/compose/docker-compose.yml` 默认只对内网发布两个端口：
 
 - `api`: `${API_PORT:-8000}`
 - `web`: `${WEB_PORT:-8080}`
 
-`postgres`、`knowledge`、`worker` 只在 Compose 内部网络可达。RAGFlow 使用独立 Compose，仍只绑定回环地址。`api` 与 `worker` 都以只读方式挂载 `${WORKSPACE_HOST_PATH:-../../workspace}` 到 `/workspace`，被分析仓库不可被容器写入。相对路径以 `deploy/compose/` 为基准，建议在生产环境使用绝对路径。
+`postgres` 额外绑定到 `127.0.0.1:${POSTGRES_PORT:-5432}`，供本机测试与运维工具使用，不对其他主机开放；`knowledge`、`worker` 只在 Compose 内部网络可达。RAGFlow 使用独立 Compose，仍只绑定回环地址。`api` 与 `worker` 都以只读方式挂载 `${WORKSPACE_HOST_PATH:-../../workspace}` 到 `/workspace`，被分析仓库不可被容器写入。相对路径以 `deploy/compose/` 为基准，建议在生产环境使用绝对路径。
 
 ## 启动
 
-1. 将 `.env.example` 复制为 `.env`，设置数据库密码、`AUTH_SECRET`、管理员密码与火山方舟密钥。
+1. 将 `.env.example` 复制为 `.env`，设置数据库密码、`AUTH_SECRET`、管理员密码与火山方舟密钥。`RAGFLOW_BASE_URL` 供宿主机直连网关使用；Compose 内的 knowledge 容器使用 `RAGFLOW_DOCKER_BASE_URL` 访问宿主机 RAGFlow。
 2. 把待分析仓库放在 `WORKSPACE_HOST_PATH` 下，并在平台中登记容器内路径（例如 `/workspace/repo-a`）。
 3. 启动：
 

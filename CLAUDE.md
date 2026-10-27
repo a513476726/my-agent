@@ -132,4 +132,4 @@ openspec validate <name> --strict          # 提交前校验
 
 ## 当前状态
 
-仓库的本地功能开发已覆盖 P0–P10：uv/pnpm 多包工程、数据层、管理后台、契约生成、RAGFlow 网关与增量同步、AgentScope 智能体、调度报告、能力沉淀、只读挂载与备份恢复。默认模型为火山方舟 `doubao-seed-2-1-pro-260628`，已通过真实工具调用与 SSE 冒烟。GitHub Actions 与 CODEOWNERS 已随远程仓库生效，仅改 `apps/web` 时 Frontend 路径过滤实跑通过。LibreChat v0.8.8 实例联调通过，项目端点问答经本平台执行并返回、落库引用。知识库合成语料验收已通过：20 篇文档（含扫描件页码与复杂表格）召回与出处可定位率均为 100%、失败率 0%，1001 篇同步的失败隔离与双项目检索隔离测试通过；全量测试 `128 passed`。真实 RAGFlow 语料复验（6.4a）以及多主机/长期内存压测（11.1、11.3）仍待外部环境。实施进度以 `openspec/changes/personal-work-agent-platform/tasks.md` 为准。
+仓库的本地功能开发已覆盖 P0–P10：uv/pnpm 多包工程、数据层、管理后台、契约生成、RAGFlow 网关与增量同步、AgentScope 智能体、调度报告、能力沉淀、只读挂载与备份恢复。默认模型为火山方舟 `doubao-seed-2-1-pro-260628`，已通过真实工具调用与 SSE 冒烟。GitHub Actions 与 CODEOWNERS 已随远程仓库生效，仅改 `apps/web` 时 Frontend 路径过滤实跑通过。LibreChat v0.8.8 实例联调通过，项目端点问答经本平台执行并返回、落库引用。本地 Compose 全栈启动实测通过：API/PostgreSQL/knowledge/worker 健康，Web 可访问，登录与菜单正常，knowledge 可访问宿主机 RAGFlow，未绑定项目的对话请求正确拒绝且不执行工具。知识库合成语料验收已通过：20 篇文档（含扫描件页码与复杂表格）召回与出处可定位率均为 100%、失败率 0%，1001 篇同步的失败隔离与双项目检索隔离测试通过；全量测试 `128 passed`。真实 RAGFlow 语料复验（6.4a）以及多主机/长期内存压测（11.1、11.3）仍待外部环境。实施进度以 `openspec/changes/personal-work-agent-platform/tasks.md` 为准。
