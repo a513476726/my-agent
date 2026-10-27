@@ -1,0 +1,14 @@
+{
+  "name": "my-agent-platform",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@10.30.3",
+  "scripts": {
+    "dev": "pnpm --filter @my-agent/web dev",
+    "lint": "pnpm -r --if-present run lint",
+    "build": "pnpm -r --if-present run build",
+    "test": "pnpm -r --if-present run test",
+    "contracts": "uv run python apps/api/scripts/export_openapi.py && pnpm --filter @my-agent/shared-types generate",
+    "contracts:check": "uv run python apps/api/scripts/export_openapi.py --check && pnpm --filter @my-agent/shared-types generate:check"
+  }
+}

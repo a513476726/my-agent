@@ -1,0 +1,144 @@
+name: my-agent-ragflow
+
+services:
+  mysql:
+    image: ${MYSQL_IMAGE:-mysql:8.0.40}
+    restart: unless-stopped
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-authentication-plugin=mysql_native_password
+      - --innodb-buffer-pool-size=512M
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD:?请先设置 MYSQL_PASSWORD}
+      TZ: ${TZ:-Asia/Shanghai}
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/00-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -uroot -p$${MYSQL_ROOT_PASSWORD} --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 20s
+    mem_limit: 1g
+
+  minio:
+    image: ${MINIO_IMAGE:-pgsty/silo:RELEASE.2026-08-06T00-00-00Z}
+    restart: unless-stopped
+    command: ["server", "--console-address", ":9001", "/data"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_USER:?请先设置 MINIO_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD:?请先设置 MINIO_PASSWORD}
+      TZ: ${TZ:-Asia/Shanghai}
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 10s
+    mem_limit: 512m
+
+  kvrocks:
+    image: ${KVROCKS_IMAGE:-apache/kvrocks:2.16.0}
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "/etc/kvrocks/entrypoint.sh"]
+    user: "0:0"
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?请先设置 REDIS_PASSWORD}
+      TZ: ${TZ:-Asia/Shanghai}
+    volumes:
+      - kvrocks-data:/var/lib/kvrocks
+      - ./kvrocks-entrypoint.sh:/etc/kvrocks/entrypoint.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$${REDIS_PASSWORD}\" ping | grep -q PONG"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 10s
+    mem_limit: 512m
+
+  nats:
+    image: ${NATS_IMAGE:-nats:2.14.2}
+    restart: unless-stopped
+    command: ["-js", "-sd", "/data", "--http_port", "8222"]
+    volumes:
+      - nats-data:/data
+    healthcheck:
+      test: ["CMD", "nats-server", "--health-check"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    mem_limit: 256m
+
+  infinity:
+    image: ${INFINITY_IMAGE:-infiniflow/infinity:v0.7.4-x64-v3}
+    platform: linux/amd64
+    restart: unless-stopped
+    command: ["-f", "/infinity_conf.toml"]
+    volumes:
+      - infinity-data:/var/infinity
+      - ./infinity_conf.toml:/infinity_conf.toml:ro
+    ulimits:
+      nofile:
+        soft: 500000
+        hard: 500000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:23820/admin/node/current"]
+      interval: 10s
+      timeout: 10s
+      retries: 120
+      start_period: 30s
+    mem_limit: 3g
+
+  ragflow:
+    image: ${RAGFLOW_IMAGE:-infiniflow/ragflow:v1.0.0-rc2}
+    platform: linux/amd64
+    restart: unless-stopped
+    command: ["--enable-adminserver", "--init-superuser"]
+    environment:
+      DOC_ENGINE: infinity
+      DB_TYPE: mysql
+      MYSQL_HOST: mysql
+      MYSQL_PORT: "3306"
+      MYSQL_DBNAME: rag_flow
+      MYSQL_USER: root
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?请先设置 MYSQL_PASSWORD}
+      MINIO_HOST: minio
+      MINIO_USER: ${MINIO_USER:?请先设置 MINIO_USER}
+      MINIO_PASSWORD: ${MINIO_PASSWORD:?请先设置 MINIO_PASSWORD}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?请先设置 REDIS_PASSWORD}
+      KVROCKS_HOST: kvrocks
+      KVROCKS_PORT: "6379"
+      INFINITY_HOST: infinity
+      NATS_HOST: nats
+      NATS_PORT: "4222"
+      ADMIN_DEFAULT_PASSWORD: ${RAGFLOW_ADMIN_PASSWORD:?请先设置 RAGFLOW_ADMIN_PASSWORD}
+      TZ: ${TZ:-Asia/Shanghai}
+    volumes:
+      - ragflow-logs:/ragflow/logs
+      - ./service_conf.yaml.template:/ragflow/conf/service_conf.yaml.template:ro
+    ports:
+      - "127.0.0.1:${RAGFLOW_HTTP_PORT:-9380}:9380"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      kvrocks:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+      infinity:
+        condition: service_healthy
+    mem_limit: ${RAGFLOW_MEM_LIMIT:-4g}
+
+volumes:
+  mysql-data:
+  minio-data:
+  kvrocks-data:
+  nats-data:
+  infinity-data:
+  ragflow-logs:

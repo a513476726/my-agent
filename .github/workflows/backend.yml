@@ -1,0 +1,69 @@
+name: Backend
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/api/**"
+      - "apps/worker/**"
+      - "packages/core/**"
+      - "packages/data/**"
+      - "packages/agent/**"
+      - "services/knowledge/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".python-version"
+      - "Makefile"
+      - ".github/workflows/backend.yml"
+  pull_request:
+    paths:
+      - "apps/api/**"
+      - "apps/worker/**"
+      - "packages/core/**"
+      - "packages/data/**"
+      - "packages/agent/**"
+      - "services/knowledge/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".python-version"
+      - "Makefile"
+      - ".github/workflows/backend.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backend-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: myagent_test
+          POSTGRES_USER: myagent
+          POSTGRES_PASSWORD: myagent
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U myagent -d myagent_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      TEST_DATABASE_URL: postgresql+psycopg://myagent:myagent@127.0.0.1:5432/myagent_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+          enable-cache: true
+      - run: uv sync --frozen --all-packages
+      - run: uv run ruff format --check .
+      - run: uv run ruff check .
+      - run: uv run lint-imports
+      - run: uv run pytest

@@ -1,0 +1,122 @@
+name: my-agent
+
+x-python-build: &python-build
+  context: ../..
+  dockerfile: deploy/docker/python.Dockerfile
+
+x-python-environment: &python-environment
+  DATABASE_URL: ${DOCKER_DATABASE_URL:-postgresql+psycopg://${POSTGRES_USER:-myagent}:${POSTGRES_PASSWORD:?请先设置 POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-myagent}}
+  TZ: ${TZ:-Asia/Shanghai}
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-myagent}
+      POSTGRES_USER: ${POSTGRES_USER:-myagent}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?请先设置 POSTGRES_PASSWORD}
+      TZ: ${TZ:-Asia/Shanghai}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    mem_limit: ${POSTGRES_MEM_LIMIT:-2g}
+
+  knowledge:
+    image: my-agent-python:local
+    build: *python-build
+    restart: unless-stopped
+    command:
+      ["uvicorn", "agent_knowledge.app:create_app", "--factory", "--host", "0.0.0.0", "--port", "8010"]
+    environment:
+      RAGFLOW_BASE_URL: ${RAGFLOW_BASE_URL:-http://host.docker.internal:9380}
+      RAGFLOW_API_KEY: ${RAGFLOW_API_KEY:-}
+      RAGFLOW_EMBEDDING_MODEL: ${RAGFLOW_EMBEDDING_MODEL:-}
+      RAGFLOW_TIMEOUT_SECONDS: ${RAGFLOW_TIMEOUT_SECONDS:-30}
+      TZ: ${TZ:-Asia/Shanghai}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test:
+        ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8010/docs')"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+    mem_limit: ${KNOWLEDGE_MEM_LIMIT:-512m}
+
+  api:
+    image: my-agent-python:local
+    build: *python-build
+    restart: unless-stopped
+    command:
+      - sh
+      - -c
+      - alembic -c /app/packages/data/alembic.ini upgrade head && uvicorn agent_api.main:app --host 0.0.0.0 --port 8000
+    environment:
+      <<: *python-environment
+      APP_ENV: production
+      AUTH_SECRET: ${AUTH_SECRET:?请先设置 AUTH_SECRET}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?请先设置 ADMIN_PASSWORD}
+      KNOWLEDGE_BASE_URL: http://knowledge:8010
+      KNOWLEDGE_TIMEOUT_SECONDS: ${KNOWLEDGE_TIMEOUT_SECONDS:-30}
+      ARK_API_KEY: ${ARK_API_KEY:-}
+      ARK_BASE_URL: ${ARK_BASE_URL:-https://ark.cn-beijing.volces.com/api/v3}
+      AGENT_MODEL: ${AGENT_MODEL:-doubao-seed-2-1-pro-260628}
+      AGENT_MAX_ITERS: ${AGENT_MAX_ITERS:-8}
+      AGENT_TEMPERATURE: ${AGENT_TEMPERATURE:-0.3}
+      AGENT_MAX_TOKENS: ${AGENT_MAX_TOKENS:-4096}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    ports:
+      - "${API_BIND_ADDRESS:-0.0.0.0}:${API_PORT:-8000}:8000"
+    volumes:
+      - ${WORKSPACE_HOST_PATH:-../../workspace}:/workspace:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+    mem_limit: ${API_MEM_LIMIT:-1g}
+
+  worker:
+    image: my-agent-python:local
+    build: *python-build
+    restart: unless-stopped
+    command: ["python", "-m", "agent_worker.scheduler"]
+    environment:
+      <<: *python-environment
+      KNOWLEDGE_BASE_URL: http://knowledge:8010
+      KNOWLEDGE_TIMEOUT_SECONDS: ${KNOWLEDGE_TIMEOUT_SECONDS:-30}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    volumes:
+      - ${WORKSPACE_HOST_PATH:-../../workspace}:/workspace:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    mem_limit: ${WORKER_MEM_LIMIT:-1g}
+
+  web:
+    image: my-agent-web:local
+    build:
+      context: ../..
+      dockerfile: deploy/docker/web.Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${WEB_BIND_ADDRESS:-0.0.0.0}:${WEB_PORT:-8080}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    mem_limit: ${WEB_MEM_LIMIT:-128m}
+
+volumes:
+  postgres-data:

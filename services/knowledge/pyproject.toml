@@ -1,0 +1,22 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "agent-knowledge"
+version = "0.1.0"
+description = "知识库网关（封装 RAGFlow）"
+requires-python = ">=3.12"
+dependencies = [
+    "agent-core",
+    "fastapi>=0.115",
+    "httpx>=0.28",
+    "python-multipart>=0.0.20",
+    "uvicorn[standard]>=0.34",
+]
+
+[tool.uv.sources]
+agent-core = { workspace = true }
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/agent_knowledge"]

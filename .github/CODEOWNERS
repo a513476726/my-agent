@@ -1,0 +1,20 @@
+# 默认负责人。
+* @a513476726
+
+# Python 后端与共享包
+/apps/api/ @a513476726
+/apps/worker/ @a513476726
+/packages/core/ @a513476726
+/packages/data/ @a513476726
+/packages/agent/ @a513476726
+/services/knowledge/ @a513476726
+
+# 前端与契约生成物
+/apps/web/ @a513476726
+/packages/shared-types/ @a513476726
+
+# 基础设施、部署与规划
+/.github/ @a513476726
+/deploy/ @a513476726
+/openspec/ @a513476726
+/docs/ @a513476726

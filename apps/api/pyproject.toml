@@ -1,0 +1,28 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "agent-api"
+version = "0.1.0"
+description = "BFF 与运营 API"
+requires-python = ">=3.12"
+dependencies = [
+    "agent-core",
+    "agent-data",
+    "agent-runtime",
+    "fastapi>=0.115",
+    "httpx>=0.28",
+    "pydantic-settings>=2.7",
+    "pyjwt>=2.9",
+    "python-multipart>=0.0.20",
+    "uvicorn[standard]>=0.34",
+]
+
+[tool.uv.sources]
+agent-core = { workspace = true }
+agent-data = { workspace = true }
+agent-runtime = { workspace = true }
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/agent_api"]

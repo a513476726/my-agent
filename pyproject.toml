@@ -1,0 +1,161 @@
+[project]
+name = "my-agent-platform"
+version = "0.1.0"
+description = "个人工作助理 Agent 平台（单仓多包）"
+requires-python = ">=3.12,<3.14"
+dependencies = []
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = [
+    "apps/api",
+    "apps/worker",
+    "packages/core",
+    "packages/data",
+    "packages/agent",
+    "services/knowledge",
+]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28",
+    "import-linter>=2.1",
+    "pytest>=8.3",
+    "pytest-cov>=6.0",
+    "ruff>=0.9",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+extend-exclude = ["packages/data/migrations/versions"]
+src = [
+    "apps/api/src",
+    "apps/worker/src",
+    "packages/core/src",
+    "packages/data/src",
+    "packages/agent/src",
+    "services/knowledge/src",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+ignore = ["RUF001", "RUF002", "RUF003"]
+
+[tool.ruff.lint.isort]
+known-first-party = [
+    "agent_api",
+    "agent_core",
+    "agent_data",
+    "agent_knowledge",
+    "agent_runtime",
+    "agent_worker",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["apps", "packages", "services", "tests"]
+addopts = "-ra"
+
+[tool.importlinter]
+root_packages = [
+    "agent_api",
+    "agent_core",
+    "agent_data",
+    "agent_knowledge",
+    "agent_runtime",
+    "agent_worker",
+]
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "core 不依赖其他工作区包"
+type = "forbidden"
+source_modules = ["agent_core"]
+forbidden_modules = [
+    "agent_api",
+    "agent_data",
+    "agent_knowledge",
+    "agent_runtime",
+    "agent_worker",
+]
+
+[[tool.importlinter.contracts]]
+name = "core 不依赖第三方包"
+type = "forbidden"
+source_modules = ["agent_core"]
+forbidden_modules = [
+    "agentscope",
+    "alembic",
+    "apscheduler",
+    "fastapi",
+    "httpx",
+    "psycopg",
+    "pydantic",
+    "sqlalchemy",
+    "starlette",
+    "uvicorn",
+]
+
+[[tool.importlinter.contracts]]
+name = "apps 之间互不依赖"
+type = "independence"
+modules = ["agent_api", "agent_worker"]
+
+[[tool.importlinter.contracts]]
+name = "data 只依赖 core"
+type = "forbidden"
+source_modules = ["agent_data"]
+forbidden_modules = [
+    "agent_api",
+    "agent_knowledge",
+    "agent_runtime",
+    "agent_worker",
+]
+
+[[tool.importlinter.contracts]]
+name = "runtime 只依赖 core"
+type = "forbidden"
+source_modules = ["agent_runtime"]
+forbidden_modules = [
+    "agent_api",
+    "agent_data",
+    "agent_knowledge",
+    "agent_worker",
+]
+
+[[tool.importlinter.contracts]]
+name = "knowledge 只依赖 core"
+type = "forbidden"
+source_modules = ["agent_knowledge"]
+forbidden_modules = [
+    "agent_api",
+    "agent_data",
+    "agent_runtime",
+    "agent_worker",
+]
+
+[[tool.importlinter.contracts]]
+name = "api 不依赖 worker 与 knowledge"
+type = "forbidden"
+source_modules = ["agent_api"]
+forbidden_modules = ["agent_knowledge", "agent_worker"]
+
+[[tool.importlinter.contracts]]
+name = "worker 不依赖 api 与 knowledge"
+type = "forbidden"
+source_modules = ["agent_worker"]
+forbidden_modules = ["agent_api", "agent_knowledge"]
+
+[[tool.importlinter.contracts]]
+name = "API 业务模块互不依赖"
+type = "independence"
+modules = [
+    "agent_api.modules.capability",
+    "agent_api.modules.chat",
+    "agent_api.modules.document",
+    "agent_api.modules.job",
+    "agent_api.modules.project",
+    "agent_api.modules.report",
+]

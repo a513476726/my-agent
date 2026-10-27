@@ -1,0 +1,21 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "agent-data"
+version = "0.1.0"
+description = "数据库模型、迁移与仓储实现"
+requires-python = ">=3.12"
+dependencies = [
+    "agent-core",
+    "alembic>=1.14",
+    "psycopg[binary]>=3.2",
+    "sqlalchemy>=2.0.36",
+]
+
+[tool.uv.sources]
+agent-core = { workspace = true }
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/agent_data"]
