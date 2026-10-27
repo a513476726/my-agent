@@ -7,7 +7,12 @@ import httpx
 import pytest
 
 from agent_api.knowledge import KnowledgeClient
-from agent_core import DomainValidationError, NotFoundError, UnavailableError
+from agent_core import (
+    DomainValidationError,
+    NotFoundError,
+    RetrievalQuery,
+    UnavailableError,
+)
 
 
 def _client(handler: httpx.MockTransport) -> KnowledgeClient:
@@ -81,6 +86,51 @@ def test_upload_document_uses_multipart_and_returns_external_id() -> None:
 
     assert document.document_id == "ragflow-doc-1"
     assert document.parse_started is True
+
+
+def test_retrieve_accepts_domain_query_for_agent_tools() -> None:
+    project_id = uuid4()
+    document_id = uuid4()
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == "/v1/retrieval"
+        assert json.loads(request.content) == {
+            "project_id": str(project_id),
+            "query": "登录重试",
+            "top_k": 3,
+        }
+        return httpx.Response(
+            200,
+            json={
+                "code": 0,
+                "data": {
+                    "hits": [
+                        {
+                            "chunk_id": "chunk-1",
+                            "document_id": str(document_id),
+                            "title": "登录需求说明",
+                            "source_path": "docs/login.md",
+                            "heading_path": ["登录", "重试策略"],
+                            "snippet": "最多重试三次。",
+                            "score": 0.97,
+                            "page": None,
+                        }
+                    ],
+                    "total": 1,
+                    "matched": True,
+                },
+                "message": "ok",
+                "success": True,
+            },
+        )
+
+    hits = _client(httpx.MockTransport(handler)).retrieve(
+        RetrievalQuery(project_id=project_id, text="登录重试", top_k=3)
+    )
+
+    assert len(hits) == 1
+    assert hits[0].document_id == document_id
+    assert hits[0].heading_path == ("登录", "重试策略")
 
 
 def test_gateway_error_maps_to_domain_error() -> None:

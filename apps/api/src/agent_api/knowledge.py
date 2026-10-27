@@ -9,6 +9,7 @@ from agent_core import (
     DomainValidationError,
     NotFoundError,
     RetrievalHit,
+    RetrievalQuery,
     UnavailableError,
 )
 
@@ -92,7 +93,12 @@ class KnowledgeClient:
             parse_started=bool(data["parse_started"]),
         )
 
-    def retrieve(self, project_id: UUID, query: str, top_k: int = 5) -> tuple[RetrievalHit, ...]:
+    def retrieve(self, query: RetrievalQuery) -> tuple[RetrievalHit, ...]:
+        return self.retrieve_hits(query.project_id, query.text, query.top_k)
+
+    def retrieve_hits(
+        self, project_id: UUID, query: str, top_k: int = 5
+    ) -> tuple[RetrievalHit, ...]:
         data = self._request(
             "POST",
             "/v1/retrieval",

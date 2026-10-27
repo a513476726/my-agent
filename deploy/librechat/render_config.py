@@ -47,7 +47,7 @@ def build_config(
             }
         )
     return {
-        "version": "1.2.8",
+        "version": "1.3.18",
         "cache": True,
         "fileStrategy": "local",
         "endpoints": {"custom": endpoints},

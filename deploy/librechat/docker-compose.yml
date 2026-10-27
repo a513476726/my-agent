@@ -1,0 +1,44 @@
+name: my-agent-librechat
+
+services:
+  mongodb:
+    image: ${MONGO_IMAGE:-mongo:8.0.20}
+    restart: unless-stopped
+    volumes:
+      - librechat-mongo:/data/db
+    mem_limit: ${MONGO_MEM_LIMIT:-512m}
+
+  librechat:
+    image: ${LIBRECHAT_IMAGE:-registry.librechat.ai/librechat-ai/librechat-dev:latest}
+    restart: unless-stopped
+    depends_on:
+      - mongodb
+    ports:
+      - "127.0.0.1:${LIBRECHAT_PORT:-3080}:3080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      HOST: 0.0.0.0
+      PORT: "3080"
+      MONGO_URI: mongodb://mongodb:27017/LibreChat
+      CONFIG_PATH: /app/librechat.yaml
+      MY_AGENT_API_KEY: ${MY_AGENT_API_KEY:?请设置 MY_AGENT_API_KEY}
+      CREDS_KEY: ${LIBRECHAT_CREDS_KEY:?请设置 LIBRECHAT_CREDS_KEY}
+      CREDS_IV: ${LIBRECHAT_CREDS_IV:?请设置 LIBRECHAT_CREDS_IV}
+      JWT_SECRET: ${LIBRECHAT_JWT_SECRET:?请设置 LIBRECHAT_JWT_SECRET}
+      JWT_REFRESH_SECRET: ${LIBRECHAT_JWT_REFRESH_SECRET:?请设置 LIBRECHAT_JWT_REFRESH_SECRET}
+      ALLOW_REGISTRATION: ${LIBRECHAT_ALLOW_REGISTRATION:-false}
+      SEARCH: "false"
+      NO_PROXY: localhost,127.0.0.1,::1,mongodb,host.docker.internal
+    volumes:
+      - ./librechat.yaml:/app/librechat.yaml:ro
+      - librechat-data:/app/data
+      - librechat-uploads:/app/uploads
+      - librechat-logs:/app/logs
+    mem_limit: ${LIBRECHAT_MEM_LIMIT:-1g}
+
+volumes:
+  librechat-mongo:
+  librechat-data:
+  librechat-uploads:
+  librechat-logs:

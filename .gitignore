@@ -54,3 +54,6 @@ tmp/
 .omc/*
 !.omc/skills/
 !.omc/skills/**
+
+# LibreChat 按项目生成的运行配置
+deploy/librechat/librechat.yaml
