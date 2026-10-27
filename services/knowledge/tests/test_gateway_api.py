@@ -304,6 +304,67 @@ def test_projects_retrieve_only_their_own_dataset(
     assert [item[0] for item in provider.retrievals] == [dataset_a, dataset_b]
 
 
+def test_similar_queries_return_locatable_project_sources_without_leaks(
+    client: TestClient, provider: FakeProvider
+) -> None:
+    project_a, project_b = uuid4(), uuid4()
+    dataset_a = _ensure_dataset(client, project_a, "项目 A")
+    dataset_b = _ensure_dataset(client, project_b, "项目 B")
+    provider.hits_by_dataset[dataset_a] = [
+        ProviderHit(
+            chunk_id="a-login",
+            document_id="doc-a",
+            dataset_id=dataset_a,
+            title="A-登录需求.md",
+            source_path="docs/a/登录需求.md",
+            snippet="# 账号体系\n## 登录超时\nA 项目登录超时为 30 分钟",
+            score=0.93,
+        ),
+        ProviderHit(
+            chunk_id="b-leak",
+            document_id="doc-b",
+            dataset_id=dataset_b,
+            title="B-登录需求.md",
+            source_path="docs/b/登录需求.md",
+            snippet="# 账号体系\n## 登录超时\nB 项目登录超时为 10 分钟",
+            score=0.99,
+        ),
+    ]
+    provider.hits_by_dataset[dataset_b] = [
+        ProviderHit(
+            chunk_id="b-login",
+            document_id="doc-b",
+            dataset_id=dataset_b,
+            title="B-登录需求.md",
+            source_path="docs/b/登录需求.md",
+            snippet="# 账号体系\n## 登录超时\nB 项目登录超时为 10 分钟",
+            score=0.95,
+        )
+    ]
+
+    result_a = client.post(
+        "/v1/retrieval",
+        json={"project_id": str(project_a), "query": "登录超时", "top_k": 5},
+    )
+    result_b = client.post(
+        "/v1/retrieval",
+        json={"project_id": str(project_b), "query": "登录超时", "top_k": 5},
+    )
+
+    data_a = result_a.json()["data"]
+    data_b = result_b.json()["data"]
+    assert data_a["total"] == 1
+    assert data_b["total"] == 1
+    assert data_a["hits"][0]["document_id"] == "doc-a"
+    assert data_a["hits"][0]["source_path"] == "docs/a/登录需求.md"
+    assert data_a["hits"][0]["heading_path"] == ["账号体系", "登录超时"]
+    assert data_b["hits"][0]["document_id"] == "doc-b"
+    assert data_b["hits"][0]["source_path"] == "docs/b/登录需求.md"
+    assert data_b["hits"][0]["heading_path"] == ["账号体系", "登录超时"]
+    assert {hit["document_id"] for hit in data_a["hits"]} == {"doc-a"}
+    assert {hit["document_id"] for hit in data_b["hits"]} == {"doc-b"}
+
+
 def test_delete_document_resolves_dataset_and_delegates(
     client: TestClient, provider: FakeProvider
 ) -> None:

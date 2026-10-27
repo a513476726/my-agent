@@ -15,8 +15,15 @@ from agent_worker.sync import main, sync_project
 
 
 class FakeKnowledge:
-    def __init__(self, *, fail_on_filename: str | None = None) -> None:
-        self.fail_on_filename = fail_on_filename
+    def __init__(
+        self,
+        *,
+        fail_on_filename: str | None = None,
+        fail_on_filenames: set[str] | None = None,
+    ) -> None:
+        self.fail_on_filenames = set(fail_on_filenames or ())
+        if fail_on_filename is not None:
+            self.fail_on_filenames.add(fail_on_filename)
         self.ensures: list[tuple[UUID, str]] = []
         self.uploads: list[tuple[UUID, str, str, bytes]] = []
         self.deletes: list[tuple[str, str]] = []
@@ -33,7 +40,7 @@ class FakeKnowledge:
         content: bytes,
         content_type: str | None,
     ) -> KnowledgeDocument:
-        if filename == self.fail_on_filename:
+        if filename in self.fail_on_filenames:
             raise RuntimeError("上传失败")
         self.uploads.append((project_id, dataset_id, filename, content))
         return KnowledgeDocument(
@@ -180,6 +187,52 @@ def test_sync_failure_does_not_block_other_documents(
     with UnitOfWork(session_factory) as uow:
         listing = uow.documents.list_by_project(project.id, PageRequest())
     assert [document.source_path for document in listing.records] == ["docs/good.md"]
+
+
+def test_sync_1001_documents_reports_all_failures_without_blocking(
+    tmp_path: Path,
+    session_factory: sessionmaker[Session],
+) -> None:
+    project_root = tmp_path / "repo"
+    documents_dir = project_root / "docs"
+    documents_dir.mkdir(parents=True)
+    failing_names = {"doc-0003.md", "doc-0500.md", "doc-0999.md"}
+    for index in range(1001):
+        filename = f"doc-{index:04d}.md"
+        (documents_dir / filename).write_text(
+            f"# 文档 {index}\n\n唯一内容标记 SYN-{index:04d}",
+            encoding="utf-8",
+        )
+
+    project = _make_project(project_root)
+    _store_project(session_factory, project)
+    knowledge = FakeKnowledge(fail_on_filenames=failing_names)
+
+    result = sync_project(
+        session_factory,
+        knowledge,
+        project,
+        actor="tester",
+        source_dir="docs",
+    )
+
+    assert result.added == 998
+    assert result.updated == 0
+    assert result.skipped == 0
+    assert [failure.source_path for failure in result.failed] == [
+        "docs/doc-0003.md",
+        "docs/doc-0500.md",
+        "docs/doc-0999.md",
+    ]
+    assert {failure.message for failure in result.failed} == {"上传失败"}
+    assert len(knowledge.uploads) == 998
+    assert knowledge.uploads[-1][2] == "doc-1000.md"
+
+    with UnitOfWork(session_factory) as uow:
+        listing = uow.documents.list_by_project(project.id, PageRequest(limit=1))
+        assert listing.total == 998
+        assert uow.documents.find_by_source_path(project.id, "docs/doc-0003.md") is None
+        assert uow.documents.find_by_source_path(project.id, "docs/doc-1000.md") is not None
 
 
 def test_sync_rejects_source_dir_outside_project(
