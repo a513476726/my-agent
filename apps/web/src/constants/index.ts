@@ -2,7 +2,6 @@ export const STORAGE_KEYS = {
   ACCESS_TOKEN: "my-agent.access_token",
   USER_INFO: "my-agent.user_info",
   MENUS: "my-agent.menus",
-  THEME: "my-agent.theme",
 } as const;
 
 export const APP_MENU_NAME = "admin";

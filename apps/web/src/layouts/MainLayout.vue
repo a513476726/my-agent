@@ -1,7 +1,5 @@
 <script setup lang="ts">
 import {
-  BgColorsOutlined,
-  BulbOutlined,
   LogoutOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
@@ -15,14 +13,12 @@ import MenuItem from "@/components/Menu/MenuItem.vue";
 import TagsView from "@/components/TagsView/TagsView.vue";
 import { useAuthStore } from "@/stores/auth";
 import { useTagsStore } from "@/stores/tags";
-import { useThemeStore } from "@/stores/theme";
 import { getMenuTrailWithPaths, menuTitle } from "@/utils/route";
 
 const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
 const tagsStore = useTagsStore();
-const themeStore = useThemeStore();
 
 const collapsed = ref(false);
 const selectedKeys = computed(() => [route.path]);
@@ -101,12 +97,6 @@ async function handleLogout(): Promise<void> {
       <a-layout-header class="app-header">
         <BreadcrumbBar />
         <div class="header-actions">
-          <a-tooltip :title="themeStore.mode === 'dark' ? '切换到浅色' : '切换到深色'">
-            <a-button type="text" shape="circle" @click="themeStore.toggleTheme">
-              <BulbOutlined v-if="themeStore.mode === 'dark'" />
-              <BgColorsOutlined v-else />
-            </a-button>
-          </a-tooltip>
           <a-dropdown placement="bottomRight">
             <a-button type="text" class="user-button">
               <a-avatar size="small">

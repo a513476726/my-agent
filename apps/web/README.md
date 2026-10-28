@@ -29,6 +29,6 @@ pnpm --filter @my-agent/web build
 - `src/modules/`：按业务功能组织的页面与组件。
 - `src/api/`：仅保留新平台的请求封装，类型优先引用生成客户端。
 - `src/components/`：`ProTable`、`DetailView`、`ProUpload` 等通用组件。
-- `src/stores/`：鉴权、主题与标签页状态。
+- `src/stores/`：鉴权与标签页状态。
 
 所有请求通过 `src/utils/request.ts` 的统一客户端发出，鉴权失败会清理本地会话并跳转登录。

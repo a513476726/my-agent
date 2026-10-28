@@ -1,13 +1,11 @@
 <script setup lang="ts">
 import { RouterView } from "vue-router";
 
-import { useThemeStore } from "@/stores/theme";
-
-const themeStore = useThemeStore();
+import { appTheme } from "@/config/theme";
 </script>
 
 <template>
-  <a-config-provider :theme="themeStore.antdTheme">
+  <a-config-provider :theme="appTheme">
     <RouterView />
   </a-config-provider>
 </template>
